@@ -1,0 +1,72 @@
+version: '3.1'
+
+services:
+
+  mongo:
+    image: mongo
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: root
+    ports:
+      - 27017:27017
+    networks:
+     - iotexNetwork
+     
+  mongo-express:
+    image: mongo-express
+    restart: always
+    ports:
+      - 8081:8081
+    environment:
+      ME_CONFIG_MONGODB_ADMINUSERNAME: root
+      ME_CONFIG_MONGODB_ADMINPASSWORD: root
+      ME_CONFIG_MONGODB_URL: mongodb://root:root@mongo:27017/
+    depends_on:
+      - mongo
+    networks:
+     - iotexNetwork
+  redis:
+    image: redis:alpine
+    restart: always
+    ports:
+      - 6379:6379
+    networks:
+     - iotexNetwork
+
+  bull-monitor:
+    image: ejhayes/nodejs-bull-monitor:latest
+    ports:
+      - 3002:3000
+    environment:
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      BULL_WATCH_QUEUE_PREFIXES: bull
+      PORT: 3000
+      UI: bull-master
+    depends_on:
+      - redis
+    networks:
+     - iotexNetwork
+
+  iotex-queue:
+    image: iotex-queue:latest
+    ports:
+      - 3000:3000
+    depends_on:
+      - mongo
+    networks: 
+     - iotexNetwork
+
+  iotex-webapp:
+    image: iotex-webapp:latest
+    ports:
+      - 8000:80
+    depends_on:
+      - mongo
+    networks: 
+     - iotexNetwork
+
+networks:
+  iotexNetwork:
+    driver: bridge
